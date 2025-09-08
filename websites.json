@@ -1,0 +1,8 @@
+[
+  {
+                name: "AI Calculator Pro",
+                image: "🧮",
+                route: "https://stuffbyai.netlify.app/calc",
+                description: "A sophisticated calculator built entirely through AI prompts with advanced mathematical functions and sleek design."
+            }
+]
