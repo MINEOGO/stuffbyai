@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000000;
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        .calculator {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #000000;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .display-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px 30px;
+            min-height: 200px;
+        }
+
+        .calculation-text {
+            font-size: 24px;
+            color: #666666;
+            font-weight: 300;
+            margin-bottom: 8px;
+            text-align: right;
+            min-height: 30px;
+        }
+
+        .result-text {
+            font-size: 64px;
+            color: #ffffff;
+            font-weight: 200;
+            text-align: right;
+            line-height: 1;
+        }
+
+        .keypad {
+            padding: 20px;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .calc-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 40px;
+            border: none;
+            font-size: 32px;
+            font-weight: 400;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.1s ease;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .calc-button:active {
+            opacity: 0.7;
+        }
+
+        .calc-button.function-btn {
+            background: #a6a6a6;
+            color: #000000;
+            font-weight: 500;
+        }
+
+        .calc-button.number-btn {
+            background: #333333;
+            color: #ffffff;
+        }
+
+        .calc-button.operator-btn {
+            background: #ff9500;
+            color: #ffffff;
+            font-weight: 400;
+        }
+
+        .calc-button.operator-btn.selected {
+            background: #ffffff;
+            color: #ff9500;
+        }
+
+        .calc-button.zero-btn {
+            grid-column: span 2;
+            width: 172px;
+            border-radius: 40px;
+            justify-content: flex-start;
+            padding-left: 28px;
+        }
+
+        @media (max-width: 480px) {
+            .display-section {
+                padding: 60px 25px 30px;
+            }
+            
+            .result-text {
+                font-size: 56px;
+            }
+            
+            .calc-button {
+                width: 75px;
+                height: 75px;
+                border-radius: 37.5px;
+                font-size: 30px;
+            }
+            
+            .calc-button.zero-btn {
+                width: 162px;
+                padding-left: 25px;
+            }
+        }
+
+        @media (min-height: 800px) {
+            .display-section {
+                min-height: 300px;
+            }
+            
+            .result-text {
+                font-size: 72px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display-section">
+            <div class="calculation-text" id="calculation-display"></div>
+            <div class="result-text" id="result-display">0</div>
+        </div>
+        <div class="keypad">
+            <div class="button-grid">
+                <button class="calc-button function-btn" onclick="resetCalculator()">AC</button>
+                <button class="calc-button function-btn" onclick="toggleSign()">+/-</button>
+                <button class="calc-button function-btn" onclick="applyPercentage()">%</button>
+                <button class="calc-button operator-btn" onclick="selectOperator('/')" data-operator="/">÷</button>
+                
+                <button class="calc-button number-btn" onclick="enterNumber('7')">7</button>
+                <button class="calc-button number-btn" onclick="enterNumber('8')">8</button>
+                <button class="calc-button number-btn" onclick="enterNumber('9')">9</button>
+                <button class="calc-button operator-btn" onclick="selectOperator('*')" data-operator="*">×</button>
+                
+                <button class="calc-button number-btn" onclick="enterNumber('4')">4</button>
+                <button class="calc-button number-btn" onclick="enterNumber('5')">5</button>
+                <button class="calc-button number-btn" onclick="enterNumber('6')">6</button>
+                <button class="calc-button operator-btn" onclick="selectOperator('-')" data-operator="-">-</button>
+                
+                <button class="calc-button number-btn" onclick="enterNumber('1')">1</button>
+                <button class="calc-button number-btn" onclick="enterNumber('2')">2</button>
+                <button class="calc-button number-btn" onclick="enterNumber('3')">3</button>
+                <button class="calc-button operator-btn" onclick="selectOperator('+')" data-operator="+">+</button>
+                
+                <button class="calc-button number-btn zero-btn" onclick="enterNumber('0')">0</button>
+                <button class="calc-button number-btn" onclick="enterDecimal()">.</button>
+                <button class="calc-button operator-btn" onclick="executeCalculation()">=</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let displayValue = '0';
+        let previousValue = null;
+        let currentOperator = null;
+        let waitingForNewValue = false;
+        let justCalculated = false;
+
+        const calculationElement = document.getElementById('calculation-display');
+        const resultElement = document.getElementById('result-display');
+
+        function refreshDisplay() {
+            resultElement.textContent = formatDisplayValue(displayValue);
+            
+            if (previousValue !== null && currentOperator !== null) {
+                const operatorSymbol = getDisplaySymbol(currentOperator);
+                calculationElement.textContent = `${formatDisplayValue(previousValue)} ${operatorSymbol}`;
+            } else {
+                calculationElement.textContent = '';
+            }
+        }
+
+        function formatDisplayValue(value) {
+            const numberValue = parseFloat(value);
+            if (numberValue === 0) return '0';
+            
+            const stringValue = numberValue.toString();
+            if (stringValue.length <= 9) return stringValue;
+            
+            if (numberValue < 1 && numberValue > -1) {
+                return numberValue.toFixed(8).replace(/\.?0+$/, '');
+            }
+            
+            return numberValue.toExponential(2);
+        }
+
+        function getDisplaySymbol(operator) {
+            const symbolMap = {
+                '+': '+',
+                '-': '-',
+                '*': '×',
+                '/': '÷'
+            };
+            return symbolMap[operator] || operator;
+        }
+
+        function enterNumber(digit) {
+            if (waitingForNewValue) {
+                displayValue = digit;
+                waitingForNewValue = false;
+            } else if (justCalculated) {
+                displayValue = digit;
+                previousValue = null;
+                currentOperator = null;
+                justCalculated = false;
+                clearOperatorSelection();
+            } else {
+                displayValue = displayValue === '0' ? digit : displayValue + digit;
+            }
+            
+            refreshDisplay();
+        }
+
+        function enterDecimal() {
+            if (waitingForNewValue) {
+                displayValue = '0.';
+                waitingForNewValue = false;
+            } else if (justCalculated) {
+                displayValue = '0.';
+                previousValue = null;
+                currentOperator = null;
+                justCalculated = false;
+                clearOperatorSelection();
+            } else if (displayValue.indexOf('.') === -1) {
+                displayValue += '.';
+            }
+            
+            refreshDisplay();
+        }
+
+        function resetCalculator() {
+            displayValue = '0';
+            previousValue = null;
+            currentOperator = null;
+            waitingForNewValue = false;
+            justCalculated = false;
+            clearOperatorSelection();
+            refreshDisplay();
+        }
+
+        function clearOperatorSelection() {
+            document.querySelectorAll('.operator-btn').forEach(button => {
+                button.classList.remove('selected');
+            });
+        }
+
+        function selectOperator(operator) {
+            const currentValue = parseFloat(displayValue);
+
+            if (previousValue === null) {
+                previousValue = currentValue;
+            } else if (currentOperator && !waitingForNewValue) {
+                const calculationResult = performOperation();
+                displayValue = String(calculationResult);
+                previousValue = calculationResult;
+            }
+
+            waitingForNewValue = true;
+            currentOperator = operator;
+            justCalculated = false;
+            
+            clearOperatorSelection();
+            const selectedButton = document.querySelector(`.operator-btn[data-operator="${operator}"]`);
+            if (selectedButton) {
+                selectedButton.classList.add('selected');
+            }
+            
+            refreshDisplay();
+        }
+
+        function executeCalculation() {
+            const currentValue = parseFloat(displayValue);
+
+            if (previousValue === null || currentOperator === null) {
+                return;
+            }
+
+            if (!waitingForNewValue) {
+                const calculationResult = performOperation();
+                displayValue = String(calculationResult);
+                justCalculated = true;
+            }
+
+            previousValue = null;
+            currentOperator = null;
+            waitingForNewValue = false;
+            clearOperatorSelection();
+            refreshDisplay();
+        }
+
+        function performOperation() {
+            const previous = parseFloat(previousValue);
+            const current = parseFloat(displayValue);
+
+            switch (currentOperator) {
+                case '+':
+                    return previous + current;
+                case '-':
+                    return previous - current;
+                case '*':
+                    return previous * current;
+                case '/':
+                    return current !== 0 ? previous / current : 0;
+                default:
+                    return current;
+            }
+        }
+
+        function applyPercentage() {
+            const currentValue = parseFloat(displayValue);
+            displayValue = String(currentValue / 100);
+            refreshDisplay();
+        }
+
+        function toggleSign() {
+            const currentValue = parseFloat(displayValue);
+            displayValue = String(currentValue * -1);
+            refreshDisplay();
+        }
+
+        // Initialize the display
+        refreshDisplay();
+    </script>
+</body>
+  </html>
